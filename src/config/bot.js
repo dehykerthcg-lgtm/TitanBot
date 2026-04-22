@@ -547,3 +547,119 @@ export default botConfig;
 
 
 
+const { Client, GatewayIntentBits, SlashCommandBuilder, Routes, REST, EmbedBuilder } = require('discord.js');
+
+const TOKEN = "TU_TOKEN_AQUI";
+const CLIENT_ID = "TU_CLIENT_ID";
+const GUILD_ID = "TU_SERVER_ID";
+
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds]
+});
+
+const cedulas = new Map();
+
+// 🔹 Comandos
+const commands = [
+    new SlashCommandBuilder()
+        .setName('crear_cedula')
+        .setDescription('Crear tu cédula')
+        .addStringOption(opt => opt.setName('nombre').setDescription('Nombre').setRequired(true))
+        .addStringOption(opt => opt.setName('apellidos').setDescription('Apellidos').setRequired(true))
+        .addStringOption(opt => opt.setName('genero').setDescription('Género').setRequired(true))
+        .addStringOption(opt => opt.setName('altura').setDescription('Altura').setRequired(true))
+        .addStringOption(opt => opt.setName('nacionalidad').setDescription('Nacionalidad').setRequired(true))
+        .addStringOption(opt => opt.setName('fecha').setDescription('Fecha nacimiento YYYY-MM-DD').setRequired(true)),
+
+    new SlashCommandBuilder()
+        .setName('ver_cedula')
+        .setDescription('Ver tu cédula')
+].map(cmd => cmd.toJSON());
+
+
+
+
+
+
+// 🔹 Registrar comandos
+const rest = new REST({ version: '10' }).setToken(MTQ5NjI2OTAxODQwMTg2NTc2OA.GmSHy3.8fT-Yp2phgRcpptJs6EmVcGKpgU-_PG2bmKrcM);
+
+(async () => {
+    try {
+        await rest.put(
+            Routes.applicationGuildCommands(1496269018401865768,1496270236775874621),
+            { body: commands }
+        );
+        console.log("✅ Comandos registrados");
+    } catch (error) {
+        console.error(error);
+    }
+})();
+
+// 🔹 Bot listo
+client.once('ready', () => {
+    console.log(`🤖 Bot conectado como ${client.user.tag}`);
+});
+
+// 🔹 Interacciones
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.commandName === 'crear_cedula') {
+        const nombre = interaction.options.getString('nombre');
+        const apellidos = interaction.options.getString('apellidos');
+        const genero = interaction.options.getString('genero');
+        const altura = interaction.options.getString('altura');
+        const nacionalidad = interaction.options.getString('nacionalidad');
+        const fecha = interaction.options.getString('fecha');
+
+        const nacimiento = new Date(fecha);
+        const edad = Math.floor((Date.now() - nacimiento) / (1000 * 60 * 60 * 24 * 365));
+
+        if (edad < 18) {
+            return interaction.reply("❌ Debes ser mayor de 18 años.");
+        }
+
+        cedulas.set(interaction.user.id, {
+            nombre,
+            apellidos,
+            genero,
+            altura,
+            nacionalidad,
+            fecha,
+            foto: interaction.user.displayAvatarURL()
+        });
+
+        await interaction.reply("✅ Cédula creada correctamente.");
+    }
+
+    if (interaction.commandName === 'ver_cedula') {
+        const data = cedulas.get(interaction.user.id);
+
+        if (!data) {
+            return interaction.reply("❌ No tienes cédula creada.");
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle("📄 Cédula de Identidad")
+            .addFields(
+                { name: "Nombre", value: data.nombre },
+                { name: "Apellidos", value: data.apellidos },
+                { name: "Género", value: data.genero },
+                { name: "Altura", value: data.altura },
+                { name: "Nacionalidad", value: data.nacionalidad },
+                { name: "Fecha de nacimiento", value: data.fecha }
+            )
+            .setImage(data.foto);
+
+        await interaction.reply({ embeds: [embed] });
+    }
+});
+
+client.login(MTQ5NjI2OTAxODQwMTg2NTc2OA.GmSHy3.8fT-Yp2phgRcpptJs6EmVcGKpgU-_PG2bmKrcM);
+
+
+
+
+
+
